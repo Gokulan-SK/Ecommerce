@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+
+<head>
+    <meta charset="UTF-8">
+</head>
+
+<body>
+    <nav th:fragment="navbar" class="navbar navbar-expand-lg navbar-dark bg-dark">
+        <div class="container-fluid">
+
+            <a class="navbar-brand" th:href="@{/products}">🛒 E-Commerce</a>
+
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav me-auto">
+
+                    <!-- Products -->
+                    <li class="nav-item">
+                        <a class="nav-link" th:href="@{/products}"
+                            th:classappend="${currentPath.startsWith('/products')} ? ' active'">
+                            Products
+                        </a>
+                    </li>
+
+                    <!-- Cart -->
+                    <li class="nav-item">
+                        <a class="nav-link" th:href="@{/cart}"
+                            th:classappend="${currentPath.startsWith('/cart')} ? ' active'">
+                            Cart
+                            <span th:if="${cartItemCount > 0}" class="badge bg-primary rounded-pill"
+                                th:text="${cartItemCount}">
+                            </span>
+                        </a>
+                    </li>
+
+                    <!-- Admin -->
+                    <li class="nav-item" sec:authorize="hasRole('ADMIN')">
+                        <a class="nav-link" th:href="@{/admin}"
+                            th:classappend="${currentPath.startsWith('/admin')} ? ' active'">
+                            Admin
+                        </a>
+                    </li>
+
+                </ul>
+
+                <div class="d-flex align-items-center">
+                    <span class="navbar-text text-white me-3">
+                        Welcome, <strong sec:authentication="name"></strong>
+                    </span>
+
+                    <form th:action="@{/logout}" method="post" class="d-inline">
+                        <button type="submit" class="btn btn-outline-light btn-sm">
+                            Logout
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </nav>
+</body>
+
+</html>

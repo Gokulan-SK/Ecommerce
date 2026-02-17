@@ -1,6 +1,5 @@
 package com.ecommerce.controller;
 
-import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -11,7 +10,6 @@ import org.springframework.web.bind.annotation.RequestParam;
  * Handles MVC-based login page
  */
 @Controller
-@RequiredArgsConstructor
 public class AuthController {
 
     /**
@@ -33,14 +31,5 @@ public class AuthController {
         }
 
         return "login";
-    }
-
-    /**
-     * Show products page (protected)
-     * GET /products
-     */
-    @GetMapping("/products")
-    public String showProductsPage() {
-        return "products";
     }
 }

@@ -2,12 +2,19 @@
 <configuration>
     <include resource="org/springframework/boot/logging/logback/defaults.xml"/>
 
+    <!-- ============================= -->
     <!-- Properties -->
-    <property name="LOG_FILE" value="${LOG_FILE:-logs/ecommerce_sentinel.json}"/>
-    <property name="CONSOLE_LOG_PATTERN" 
+    <!-- ============================= -->
+    <property name="CONSOLE_LOG_PATTERN"
               value="%clr(%d{yyyy-MM-dd HH:mm:ss.SSS}){faint} %clr(${LOG_LEVEL_PATTERN:-%5p}) %clr([%15.15t]){faint} %clr(%-40.40logger{39}){cyan} %clr(:){faint} %m%n${LOG_EXCEPTION_CONVERSION_WORD:-%wEx}"/>
 
-    <!-- Console Appender for Development -->
+    <property name="REQUEST_LOG_FILE" value="logs/request-events.json"/>
+    <property name="BUSINESS_LOG_FILE" value="logs/business-events.json"/>
+    <property name="SYSTEM_LOG_FILE" value="logs/system-events.json"/>
+
+    <!-- ============================= -->
+    <!-- Console Appender (Dev Only) -->
+    <!-- ============================= -->
     <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
         <encoder>
             <pattern>${CONSOLE_LOG_PATTERN}</pattern>
@@ -15,81 +22,148 @@
         </encoder>
     </appender>
 
-    <!-- JSON File Appender for Structured Logging (ECS Format) -->
-    <appender name="JSON_FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
-        <file>${LOG_FILE}</file>
-        <encoder class="net.logstash.logback.encoder.LogstashEncoder">
-            <includeMdcKeyName>correlationId</includeMdcKeyName>
-            <includeMdcKeyName>sessionId</includeMdcKeyName>
-            <includeMdcKeyName>userId</includeMdcKeyName>
-            <includeMdcKeyName>username</includeMdcKeyName>
-            <includeMdcKeyName>endpoint</includeMdcKeyName>
-            <includeMdcKeyName>httpMethod</includeMdcKeyName>
-            <includeMdcKeyName>httpStatus</includeMdcKeyName>
-            <includeMdcKeyName>latencyMs</includeMdcKeyName>
-            <includeMdcKeyName>eventType</includeMdcKeyName>
-            <includeMdcKeyName>orderId</includeMdcKeyName>
-            <includeMdcKeyName>paymentStatus</includeMdcKeyName>
-            <includeMdcKeyName>dbQueryTimeMs</includeMdcKeyName>
-            <includeMdcKeyName>anomalyFlag</includeMdcKeyName>
-            <includeMdcKeyName>errorCode</includeMdcKeyName>
-            <includeMdcKeyName>transactionReference</includeMdcKeyName>
-            
-            <!-- ECS Format Fields -->
-            <fieldNames>
-                <timestamp>@timestamp</timestamp>
-                <version>[ignore]</version>
-                <message>message</message>
-                <logger>logger_name</logger>
-                <thread>thread_name</thread>
-                <level>log.level</level>
-                <levelValue>[ignore]</levelValue>
-            </fieldNames>
-            
-            <!-- Add custom fields -->
-            <customFields>{"application":"ecommerce-log-generator","environment":"development"}</customFields>
+    <!-- ============================= -->
+    <!-- REQUEST JSON Appender -->
+    <!-- ============================= -->
+    <appender name="REQUEST_JSON" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${REQUEST_LOG_FILE}</file>
+
+        <encoder class="net.logstash.logback.encoder.LoggingEventCompositeJsonEncoder">
+            <providers>
+                <timestamp><fieldName>@timestamp</fieldName></timestamp>
+                <logLevel><fieldName>log.level</fieldName></logLevel>
+                <loggerName><fieldName>logger_name</fieldName></loggerName>
+                <threadName><fieldName>thread_name</fieldName></threadName>
+                <arguments/>
+                <mdc/>
+                <stackTrace/>
+                <pattern>
+                    <pattern>
+                        {
+                          "application": "ecommerce-log-generator",
+                          "environment": "development"
+                        }
+                    </pattern>
+                </pattern>
+            </providers>
         </encoder>
-        
-        <!-- Rolling Policy -->
+
         <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
-            <fileNamePattern>logs/ecommerce_sentinel-%d{yyyy-MM-dd}.json</fileNamePattern>
+            <fileNamePattern>logs/request-events-%d{yyyy-MM-dd}.json</fileNamePattern>
             <maxHistory>30</maxHistory>
-            <totalSizeCap>1GB</totalSizeCap>
         </rollingPolicy>
     </appender>
 
-    <!-- Async Appender for Better Performance -->
-    <appender name="ASYNC_JSON" class="ch.qos.logback.classic.AsyncAppender">
-        <queueSize>512</queueSize>
-        <discardingThreshold>0</discardingThreshold>
-        <appender-ref ref="JSON_FILE"/>
+    <!-- ============================= -->
+    <!-- BUSINESS JSON Appender -->
+    <!-- ============================= -->
+    <appender name="BUSINESS_JSON" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${BUSINESS_LOG_FILE}</file>
+
+        <encoder class="net.logstash.logback.encoder.LoggingEventCompositeJsonEncoder">
+            <providers>
+                <timestamp><fieldName>@timestamp</fieldName></timestamp>
+                <logLevel><fieldName>log.level</fieldName></logLevel>
+                <loggerName><fieldName>logger_name</fieldName></loggerName>
+                <threadName><fieldName>thread_name</fieldName></threadName>
+                <arguments/>
+                <mdc/>
+                <stackTrace/>
+                <pattern>
+                    <pattern>
+                        {
+                          "application": "ecommerce-log-generator",
+                          "environment": "development"
+                        }
+                    </pattern>
+                </pattern>
+            </providers>
+        </encoder>
+
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <fileNamePattern>logs/business-events-%d{yyyy-MM-dd}.json</fileNamePattern>
+            <maxHistory>30</maxHistory>
+        </rollingPolicy>
     </appender>
 
-    <!-- Application Logger -->
-    <logger name="com.ecommerce" level="DEBUG" additivity="false">
-        <appender-ref ref="CONSOLE"/>
-        <appender-ref ref="ASYNC_JSON"/>
+    <!-- ============================= -->
+    <!-- SYSTEM JSON Appender -->
+    <!-- ============================= -->
+    <appender name="SYSTEM_JSON" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${SYSTEM_LOG_FILE}</file>
+
+        <encoder class="net.logstash.logback.encoder.LoggingEventCompositeJsonEncoder">
+            <providers>
+                <timestamp><fieldName>@timestamp</fieldName></timestamp>
+                <logLevel><fieldName>log.level</fieldName></logLevel>
+                <loggerName><fieldName>logger_name</fieldName></loggerName>
+                <threadName><fieldName>thread_name</fieldName></threadName>
+                <arguments/>
+                <mdc/>
+                <stackTrace/>
+                <pattern>
+                    <pattern>
+                        {
+                          "application": "ecommerce-log-generator",
+                          "environment": "development"
+                        }
+                    </pattern>
+                </pattern>
+            </providers>
+        </encoder>
+
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <fileNamePattern>logs/system-events-%d{yyyy-MM-dd}.json</fileNamePattern>
+            <maxHistory>30</maxHistory>
+        </rollingPolicy>
+    </appender>
+
+    <!-- ============================= -->
+    <!-- Async Wrappers -->
+    <!-- ============================= -->
+    <appender name="ASYNC_REQUEST" class="ch.qos.logback.classic.AsyncAppender">
+        <queueSize>512</queueSize>
+        <discardingThreshold>0</discardingThreshold>
+        <appender-ref ref="REQUEST_JSON"/>
+    </appender>
+
+    <appender name="ASYNC_BUSINESS" class="ch.qos.logback.classic.AsyncAppender">
+        <queueSize>512</queueSize>
+        <discardingThreshold>0</discardingThreshold>
+        <appender-ref ref="BUSINESS_JSON"/>
+    </appender>
+
+    <appender name="ASYNC_SYSTEM" class="ch.qos.logback.classic.AsyncAppender">
+        <queueSize>512</queueSize>
+        <discardingThreshold>0</discardingThreshold>
+        <appender-ref ref="SYSTEM_JSON"/>
+    </appender>
+
+    <!-- ============================= -->
+    <!-- Bind Custom Loggers -->
+    <!-- ============================= -->
+    <logger name="REQUEST_LOGGER" level="INFO" additivity="false">
+        <appender-ref ref="ASYNC_REQUEST"/>
     </logger>
 
-    <!-- Spring Framework -->
-    <logger name="org.springframework" level="INFO" additivity="false">
-        <appender-ref ref="CONSOLE"/>
-        <appender-ref ref="ASYNC_JSON"/>
+    <logger name="BUSINESS_LOGGER" level="INFO" additivity="false">
+        <appender-ref ref="ASYNC_BUSINESS"/>
     </logger>
 
-    <!-- Hibernate SQL Logging (optional) -->
-    <logger name="org.hibernate.SQL" level="DEBUG" additivity="false">
-        <appender-ref ref="CONSOLE"/>
+    <logger name="SYSTEM_LOGGER" level="ERROR" additivity="false">
+        <appender-ref ref="ASYNC_SYSTEM"/>
     </logger>
 
-    <logger name="org.hibernate.type.descriptor.sql.BasicBinder" level="TRACE" additivity="false">
-        <appender-ref ref="CONSOLE"/>
-    </logger>
+    <!-- ============================= -->
+    <!-- Spring Logs (Console Only) -->
+    <!-- ============================= -->
+    <logger name="org.springframework" level="INFO"/>
 
-    <!-- Root Logger -->
+    <!-- ============================= -->
+    <!-- Root -->
+    <!-- ============================= -->
     <root level="INFO">
         <appender-ref ref="CONSOLE"/>
-        <appender-ref ref="ASYNC_JSON"/>
     </root>
 
 </configuration>

@@ -47,7 +47,7 @@
 
 <body>
     <!-- Global Navbar -->
-    <div th:replace="fragments/navbar :: navbar"></div>
+    <div th:replace="~{fragments/navbar :: navbar}"></div>
 
     <div class="container mt-5">
         <!-- Success/Error Messages -->
@@ -197,19 +197,15 @@
                             </strong>
                         </div>
 
-                        <button class="btn btn-success w-100 mb-2">
-                            Proceed to Checkout
-                        </button>
+                        <form th:action="@{/orders/checkout}" method="post">
+                            <button type="submit" class="btn btn-success w-100 mb-2">
+                                Proceed to Checkout
+                            </button>
+                        </form>
 
                         <a href="/products" class="btn btn-outline-secondary w-100">
                             Continue Shopping
                         </a>
-
-                        <div class="alert alert-info mt-3 mb-0">
-                            <small>
-                                🔒 Checkout functionality will be available in a future phase
-                            </small>
-                        </div>
                     </div>
                 </div>
             </div>

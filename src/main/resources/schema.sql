@@ -35,6 +35,7 @@ CREATE TABLE products (
     description TEXT,
     price DECIMAL(10, 2) NOT NULL,
     stock INT NOT NULL DEFAULT 0,
+    version BIGINT NOT NULL DEFAULT 0,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT chk_price CHECK (price >= 0),
     CONSTRAINT chk_stock CHECK (stock >= 0)
@@ -54,11 +55,16 @@ CREATE TABLE carts (
     updated_at TIMESTAMP,
     CONSTRAINT fk_carts_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
     CONSTRAINT chk_cart_status CHECK (status IN ('ACTIVE', 'CHECKED_OUT'))
+    -- NOTE: One ACTIVE cart per user enforced by idx_uq_cart_user_active below (filtered index)
 );
 
 CREATE INDEX idx_carts_user_id ON carts(user_id);
 CREATE INDEX idx_carts_status ON carts(status);
 CREATE INDEX idx_carts_user_status ON carts(user_id, status);
+
+-- NOTE: The "one ACTIVE cart per user" rule is enforced at the application layer
+-- in OrderService.checkout() via pessimistic locking (findActiveCartForUpdate).
+-- H2 does not support partial/filtered unique indexes, so no DB-level constraint here.
 
 -- ========================================================
 -- CART_ITEMS TABLE
@@ -85,9 +91,10 @@ CREATE INDEX idx_cart_items_product_id ON cart_items(product_id);
 CREATE TABLE orders (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
     user_id BIGINT NOT NULL,
-    total_amount DECIMAL(10, 2) NOT NULL,
+    total_amount DECIMAL(12, 2) NOT NULL,
     status VARCHAR(20) NOT NULL DEFAULT 'CREATED',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP,
     CONSTRAINT fk_orders_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
     CONSTRAINT chk_total_amount CHECK (total_amount >= 0),
     CONSTRAINT chk_order_status CHECK (status IN ('CREATED', 'PAID', 'FAILED'))
@@ -99,19 +106,50 @@ CREATE INDEX idx_orders_created_at ON orders(created_at);
 
 -- ========================================================
 -- PAYMENTS TABLE
+-- One payment row per order (order_id UNIQUE enforces this at DB level)
 -- ========================================================
 CREATE TABLE payments (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
     order_id BIGINT NOT NULL UNIQUE,
-    amount DECIMAL(10, 2) NOT NULL,
+    amount DECIMAL(12, 2) NOT NULL,
     status VARCHAR(20) NOT NULL DEFAULT 'PENDING',
     transaction_reference VARCHAR(100) UNIQUE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT fk_payments_order FOREIGN KEY (order_id) REFERENCES orders(id) ON DELETE CASCADE,
-    CONSTRAINT chk_payment_amount CHECK (amount >= 0),
-    CONSTRAINT chk_payment_status CHECK (status IN ('SUCCESS', 'FAILED', 'TIMEOUT', 'PENDING'))
+
+    CONSTRAINT fk_payments_order
+        FOREIGN KEY (order_id) REFERENCES orders(id) ON DELETE CASCADE,
+
+    CONSTRAINT chk_payment_status
+        CHECK (status IN ('PENDING', 'SUCCESS', 'FAILED', 'TIMEOUT')),
+
+    CONSTRAINT chk_payment_amount CHECK (amount >= 0)
 );
 
 CREATE INDEX idx_payments_order_id ON payments(order_id);
 CREATE INDEX idx_payments_status ON payments(status);
 CREATE INDEX idx_payments_transaction_ref ON payments(transaction_reference);
+
+
+-- ========================================================
+-- ORDER_ITEMS TABLE
+-- ========================================================
+CREATE TABLE order_items (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    order_id BIGINT NOT NULL,
+    product_id BIGINT NOT NULL,
+    quantity INT NOT NULL,
+    unit_price DECIMAL(10,2) NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT fk_order_items_order 
+        FOREIGN KEY (order_id) REFERENCES orders(id) ON DELETE CASCADE,
+
+    CONSTRAINT fk_order_items_product 
+        FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE,
+
+    CONSTRAINT chk_order_item_quantity CHECK (quantity > 0),
+    CONSTRAINT chk_order_item_price CHECK (unit_price >= 0)
+);
+
+CREATE INDEX idx_order_items_order_id ON order_items(order_id);
+CREATE INDEX idx_order_items_product_id ON order_items(product_id);

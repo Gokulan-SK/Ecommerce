@@ -9,7 +9,15 @@ import java.time.LocalDateTime;
 
 /**
  * Payment Entity
- * Represents a payment transaction for an order
+ * One payment row per order (enforced by UNIQUE constraint on order_id in
+ * schema.sql).
+ *
+ * Rules:
+ * - @ManyToOne(optional=false) → Order (as required)
+ * - No cascade to Order
+ * - No eager loading (OIV=false safe)
+ * - transactionReference only set on SUCCESS, never regenerated
+ * - Status transitions enforced exclusively by PaymentStateMachine
  */
 @Entity
 @Table(name = "payments", indexes = {
@@ -27,31 +35,40 @@ public class Payment {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @OneToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "order_id", nullable = false, unique = true, foreignKey = @ForeignKey(name = "fk_payments_order"))
+    /**
+     * ManyToOne (not OneToOne) as specified — no cascade to Order.
+     * UNIQUE on order_id enforced at DB level in schema.sql.
+     */
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "order_id", nullable = false, foreignKey = @ForeignKey(name = "fk_payments_order"))
     @ToString.Exclude
     @EqualsAndHashCode.Exclude
     private Order order;
 
-    @Column(nullable = false, precision = 10, scale = 2)
+    /**
+     * Precision 12,2 — matches Order.totalAmount exactly.
+     */
+    @Column(nullable = false, precision = 12, scale = 2)
     private BigDecimal amount;
 
+    /**
+     * Status managed exclusively by PaymentStateMachine.
+     * Default PENDING set at construction time.
+     */
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
     @Builder.Default
     private PaymentStatus status = PaymentStatus.PENDING;
 
+    /**
+     * Unique transaction reference.
+     * Null until status == SUCCESS.
+     * Never regenerated once set.
+     */
     @Column(name = "transaction_reference", unique = true, length = 100)
     private String transactionReference;
 
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
-
-    public enum PaymentStatus {
-        SUCCESS,
-        FAILED,
-        TIMEOUT,
-        PENDING
-    }
 }

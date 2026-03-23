@@ -58,12 +58,14 @@ public class SecurityConfig {
 
     /**
      * Security Filter Chain Configuration
-     * Session-based authentication with form login
+     * Session-based authentication with form login.
+     * Public: /, /products/**, /error/**, /actuator/health
+     * Authenticated: /orders/**, /cart/**, /payments/**
      */
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
-                // Disable CSRF (for simplicity)
+                // Disable CSRF (for simplicity — H2 console + Thymeleaf forms)
                 .csrf(csrf -> csrf.disable())
 
                 // Enable H2 Console (disable frame options)
@@ -72,11 +74,20 @@ public class SecurityConfig {
 
                 // Configure endpoint authorization
                 .authorizeHttpRequests(auth -> auth
-                        // Public endpoints
+                        // Public — no login required
+                        .requestMatchers("/").permitAll()
+                        .requestMatchers("/products/**").permitAll()
+                        .requestMatchers("/error/**").permitAll()
+                        .requestMatchers("/actuator/health").permitAll()
                         .requestMatchers("/login").permitAll()
                         .requestMatchers("/auth/**").permitAll()
                         .requestMatchers("/h2-console/**").permitAll()
-                        .requestMatchers("/css/**", "/js/**", "/images/**").permitAll()
+                        .requestMatchers("/css/**", "/js/**", "/images/**", "/favicon.ico").permitAll()
+
+                        // Protected — must be authenticated
+                        .requestMatchers("/orders/**").authenticated()
+                        .requestMatchers("/cart/**").authenticated()
+                        .requestMatchers("/payments/**").authenticated()
 
                         // All other endpoints require authentication
                         .anyRequest().authenticated())
@@ -85,7 +96,7 @@ public class SecurityConfig {
                 .formLogin(form -> form
                         .loginPage("/login")
                         .loginProcessingUrl("/auth/login")
-                        .defaultSuccessUrl("/products", true)
+                        .defaultSuccessUrl("/", true)
                         .failureUrl("/login?error=true")
                         .permitAll())
 

@@ -3,19 +3,21 @@ package com.ecommerce.entity;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Order Entity
- * Represents a customer order
+ * Represents a customer order created from cart checkout
  */
 @Entity
 @Table(name = "orders", indexes = {
         @Index(name = "idx_orders_user_id", columnList = "user_id"),
-        @Index(name = "idx_orders_status", columnList = "status"),
-        @Index(name = "idx_orders_created_at", columnList = "created_at")
+        @Index(name = "idx_orders_status", columnList = "status")
 })
 @Data
 @NoArgsConstructor
@@ -33,7 +35,7 @@ public class Order {
     @EqualsAndHashCode.Exclude
     private User user;
 
-    @Column(name = "total_amount", nullable = false, precision = 10, scale = 2)
+    @Column(name = "total_amount", nullable = false, precision = 12, scale = 2)
     private BigDecimal totalAmount;
 
     @Enumerated(EnumType.STRING)
@@ -45,14 +47,19 @@ public class Order {
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
-    @OneToOne(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true)
+    @UpdateTimestamp
+    @Column(name = "updated_at")
+    private LocalDateTime updatedAt;
+
+    @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true)
     @ToString.Exclude
     @EqualsAndHashCode.Exclude
-    private Payment payment;
+    @Builder.Default
+    private List<OrderItem> items = new ArrayList<>();
 
-    public enum OrderStatus {
-        CREATED,
-        PAID,
-        FAILED
+    // Helper method to add order item
+    public void addItem(OrderItem item) {
+        items.add(item);
+        item.setOrder(this);
     }
 }

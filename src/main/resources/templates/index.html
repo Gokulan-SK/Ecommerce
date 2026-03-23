@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>E-Commerce — Reliable. Scalable. Secure.</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+
+        main {
+            flex: 1;
+        }
+
+        /* Hero */
+        .hero {
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 60%, #0f3460 100%);
+            color: white;
+            padding: 6rem 1rem;
+        }
+
+        .hero h1 {
+            font-size: 2.8rem;
+            font-weight: 700;
+            letter-spacing: -0.5px;
+        }
+
+        .hero p.lead {
+            font-size: 1.15rem;
+            color: rgba(255, 255, 255, 0.75);
+            max-width: 560px;
+            margin: 0 auto 2rem;
+        }
+
+        .btn-hero-primary {
+            background: #e94560;
+            border: none;
+            color: white;
+            padding: 0.75rem 2rem;
+            font-size: 1rem;
+            border-radius: 8px;
+            transition: background 0.2s;
+        }
+
+        .btn-hero-primary:hover {
+            background: #c73652;
+            color: white;
+        }
+
+        .btn-hero-outline {
+            border: 2px solid rgba(255, 255, 255, 0.5);
+            color: white;
+            padding: 0.75rem 2rem;
+            font-size: 1rem;
+            border-radius: 8px;
+            transition: all 0.2s;
+        }
+
+        .btn-hero-outline:hover {
+            border-color: white;
+            color: white;
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        /* Feature cards */
+        .feature-card {
+            border: 1px solid #e9ecef;
+            border-radius: 12px;
+            padding: 2rem 1.5rem;
+            height: 100%;
+            transition: box-shadow 0.2s, transform 0.2s;
+        }
+
+        .feature-card:hover {
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+            transform: translateY(-3px);
+        }
+
+        .feature-icon {
+            font-size: 2.2rem;
+            margin-bottom: 1rem;
+        }
+
+        /* CTA */
+        .cta-section {
+            background: #f8f9fa;
+            padding: 4rem 1rem;
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Navbar -->
+    <div th:replace="~{fragments/navbar :: navbar}"></div>
+
+    <main>
+        <!-- Hero Section -->
+        <section class="hero text-center">
+            <div class="container">
+                <h1>Reliable E-Commerce.<br>Built for Scale.</h1>
+                <p class="lead">
+                    Secure payments with idempotency guards. Concurrency-safe inventory management.
+                    Full structured logging with correlation IDs. Production-grade from day one.
+                </p>
+                <div class="d-flex justify-content-center gap-3 flex-wrap">
+                    <a th:href="@{/products}" class="btn btn-hero-primary">
+                        🛍️ Start Shopping
+                    </a>
+                    <!-- Authenticated: My Orders -->
+                    <a sec:authorize="isAuthenticated()" th:href="@{/orders}" class="btn btn-hero-outline">
+                        📦 My Orders
+                    </a>
+                    <!-- Anonymous: Login -->
+                    <a sec:authorize="isAnonymous()" th:href="@{/login}" class="btn btn-hero-outline">
+                        🔑 Login
+                    </a>
+                </div>
+            </div>
+        </section>
+
+        <!-- Features Section -->
+        <section class="py-5">
+            <div class="container">
+                <h2 class="text-center fw-semibold mb-5">Why This Platform?</h2>
+                <div class="row g-4">
+
+                    <div class="col-md-4">
+                        <div class="feature-card">
+                            <div class="feature-icon">🔒</div>
+                            <h5 class="fw-semibold">Secure Payments</h5>
+                            <p class="text-muted mb-0">
+                                Pessimistic locking prevents double-charges. Idempotency guards block
+                                duplicate payment submissions. Explicit state machine enforces valid transitions.
+                            </p>
+                        </div>
+                    </div>
+
+                    <div class="col-md-4">
+                        <div class="feature-card">
+                            <div class="feature-icon">📊</div>
+                            <h5 class="fw-semibold">Structured Logging</h5>
+                            <p class="text-muted mb-0">
+                                Every request carries a correlation ID. Business events, system errors,
+                                and request traces are logged as structured JSON — ready for Elasticsearch or Splunk.
+                            </p>
+                        </div>
+                    </div>
+
+                    <div class="col-md-4">
+                        <div class="feature-card">
+                            <div class="feature-icon">⚡</div>
+                            <h5 class="fw-semibold">Concurrency Safe</h5>
+                            <p class="text-muted mb-0">
+                                Inventory updates use row-level locking. Cart checkout is atomic.
+                                Payment processing is retry-safe with lock timeout protection.
+                            </p>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </section>
+
+        <!-- CTA Section -->
+        <section class="cta-section text-center">
+            <div class="container">
+                <h3 class="fw-semibold mb-2">Ready to explore?</h3>
+                <p class="text-muted mb-4">Browse our product catalogue and place your first order.</p>
+                <a th:href="@{/products}" class="btn btn-dark btn-lg px-5">
+                    View Products →
+                </a>
+            </div>
+        </section>
+    </main>
+
+    <!-- Footer -->
+    <div th:replace="~{fragments/footer :: footer}"></div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+
+</html>

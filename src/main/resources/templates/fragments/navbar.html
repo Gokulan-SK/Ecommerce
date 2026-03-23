@@ -9,55 +9,91 @@
     <nav th:fragment="navbar" class="navbar navbar-expand-lg navbar-dark bg-dark">
         <div class="container-fluid">
 
-            <a class="navbar-brand" th:href="@{/products}">🛒 E-Commerce</a>
+            <!-- Brand → / -->
+            <a class="navbar-brand fw-semibold" th:href="@{/}">🛒 E-Commerce</a>
 
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+            <!-- Mobile toggler -->
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarMain"
+                aria-controls="navbarMain" aria-expanded="false" aria-label="Toggle navigation">
                 <span class="navbar-toggler-icon"></span>
             </button>
 
-            <div class="collapse navbar-collapse" id="navbarNav">
-                <ul class="navbar-nav me-auto">
+            <div class="collapse navbar-collapse" id="navbarMain">
 
-                    <!-- Products -->
+                <!-- Left nav links -->
+                <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+
+                    <!-- Products (always visible) -->
                     <li class="nav-item">
                         <a class="nav-link" th:href="@{/products}"
-                            th:classappend="${currentPath.startsWith('/products')} ? ' active'">
+                            th:classappend="${currentPath != null and currentPath.startsWith('/products')} ? ' active'">
                             Products
                         </a>
                     </li>
 
-                    <!-- Cart -->
-                    <li class="nav-item">
-                        <a class="nav-link" th:href="@{/cart}"
-                            th:classappend="${currentPath.startsWith('/cart')} ? ' active'">
-                            Cart
-                            <span th:if="${cartItemCount > 0}" class="badge bg-primary rounded-pill"
-                                th:text="${cartItemCount}">
-                            </span>
+                    <!-- Orders (authenticated only) -->
+                    <li class="nav-item" sec:authorize="isAuthenticated()">
+                        <a class="nav-link" th:href="@{/orders}"
+                            th:classappend="${currentPath != null and currentPath.startsWith('/orders')} ? ' active'">
+                            Orders
                         </a>
                     </li>
 
-                    <!-- Admin -->
+                    <!-- Cart (authenticated only) -->
+                    <li class="nav-item" sec:authorize="isAuthenticated()">
+                        <a class="nav-link" th:href="@{/cart}"
+                            th:classappend="${currentPath != null and currentPath.startsWith('/cart')} ? ' active'">
+                            Cart
+                            <span th:if="${cartItemCount != null and cartItemCount > 0}"
+                                class="badge bg-primary rounded-pill" th:text="${cartItemCount}"></span>
+                        </a>
+                    </li>
+
+                    <!-- Admin (admin role only) -->
                     <li class="nav-item" sec:authorize="hasRole('ADMIN')">
                         <a class="nav-link" th:href="@{/admin}"
-                            th:classappend="${currentPath.startsWith('/admin')} ? ' active'">
+                            th:classappend="${currentPath != null and currentPath.startsWith('/admin')} ? ' active'">
                             Admin
                         </a>
                     </li>
 
                 </ul>
 
-                <div class="d-flex align-items-center">
-                    <span class="navbar-text text-white me-3">
-                        Welcome, <strong sec:authentication="name"></strong>
-                    </span>
+                <!-- Right side -->
+                <ul class="navbar-nav ms-auto mb-2 mb-lg-0 align-items-lg-center">
 
-                    <form th:action="@{/logout}" method="post" class="d-inline">
-                        <button type="submit" class="btn btn-outline-light btn-sm">
-                            Logout
-                        </button>
-                    </form>
-                </div>
+                    <!-- Authenticated: username dropdown -->
+                    <li class="nav-item dropdown" sec:authorize="isAuthenticated()">
+                        <a class="nav-link dropdown-toggle" href="#" id="userDropdown" role="button"
+                            data-bs-toggle="dropdown" aria-expanded="false">
+                            👤 <span sec:authentication="name">User</span>
+                        </a>
+                        <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown">
+                            <li>
+                                <a class="dropdown-item" th:href="@{/orders}">📦 My Orders</a>
+                            </li>
+                            <li>
+                                <hr class="dropdown-divider">
+                            </li>
+                            <li>
+                                <form th:action="@{/logout}" method="post" class="d-inline">
+                                    <button type="submit" class="dropdown-item text-danger">
+                                        🚪 Logout
+                                    </button>
+                                </form>
+                            </li>
+                        </ul>
+                    </li>
+
+                    <!-- Anonymous: Login + Register -->
+                    <li class="nav-item" sec:authorize="isAnonymous()">
+                        <a class="nav-link" th:href="@{/login}">Login</a>
+                    </li>
+                    <li class="nav-item" sec:authorize="isAnonymous()">
+                        <a class="btn btn-outline-light btn-sm ms-2" th:href="@{/auth/register}">Register</a>
+                    </li>
+
+                </ul>
             </div>
         </div>
     </nav>

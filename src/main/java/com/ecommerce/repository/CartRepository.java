@@ -2,7 +2,9 @@ package com.ecommerce.repository;
 
 import com.ecommerce.entity.Cart;
 import com.ecommerce.entity.User;
+import jakarta.persistence.LockModeType;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -33,4 +35,15 @@ public interface CartRepository extends JpaRepository<Cart, Long> {
      */
     @Query("SELECT c FROM Cart c LEFT JOIN FETCH c.items WHERE c.user.id = :userId AND c.status = 'ACTIVE'")
     Optional<Cart> findActiveCartWithItems(@Param("userId") Long userId);
+
+    /**
+     * Find active cart by user ID with pessimistic write lock for checkout
+     * Prevents concurrent checkout of the same cart
+     * 
+     * @param userId the user ID
+     * @return Optional containing the locked active cart with items
+     */
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("SELECT c FROM Cart c LEFT JOIN FETCH c.items WHERE c.user.id = :userId AND c.status = 'ACTIVE'")
+    Optional<Cart> findActiveCartForUpdate(@Param("userId") Long userId);
 }

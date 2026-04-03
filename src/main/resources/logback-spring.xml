@@ -119,6 +119,31 @@
     </appender>
 
     <!-- ============================= -->
+    <!-- HTTP Appender to Anomaly Service -->
+    <!-- ============================= -->
+    <appender name="HTTP" class="com.ecommerce.logging.HttpLogAppender">
+        <encoder class="net.logstash.logback.encoder.LoggingEventCompositeJsonEncoder">
+            <providers>
+                <timestamp><fieldName>@timestamp</fieldName></timestamp>
+                <logLevel><fieldName>log.level</fieldName></logLevel>
+                <loggerName><fieldName>logger_name</fieldName></loggerName>
+                <threadName><fieldName>thread_name</fieldName></threadName>
+                <arguments/>
+                <mdc/>
+                <stackTrace/>
+                <pattern>
+                    <pattern>
+                        {
+                          "application": "ecommerce-log-generator",
+                          "environment": "development"
+                        }
+                    </pattern>
+                </pattern>
+            </providers>
+        </encoder>
+    </appender>
+
+    <!-- ============================= -->
     <!-- Async Wrappers -->
     <!-- ============================= -->
     <appender name="ASYNC_REQUEST" class="ch.qos.logback.classic.AsyncAppender">
@@ -144,10 +169,12 @@
     <!-- ============================= -->
     <logger name="REQUEST_LOGGER" level="INFO" additivity="false">
         <appender-ref ref="ASYNC_REQUEST"/>
+        <appender-ref ref="HTTP"/>
     </logger>
 
     <logger name="BUSINESS_LOGGER" level="INFO" additivity="false">
         <appender-ref ref="ASYNC_BUSINESS"/>
+        <appender-ref ref="HTTP"/>
     </logger>
 
     <logger name="SYSTEM_LOGGER" level="ERROR" additivity="false">
@@ -164,6 +191,7 @@
     <!-- ============================= -->
     <root level="INFO">
         <appender-ref ref="CONSOLE"/>
+        <appender-ref ref="HTTP"/>
     </root>
 
 </configuration>

@@ -1,5 +1,6 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
 
 <head>
     <meta charset="UTF-8">
@@ -7,224 +8,248 @@
     <title>Product Catalog - E-Commerce</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <style>
+        body { background: #f5f5f5; }
+
+        /* ── Product card ── */
         .product-card {
             transition: transform 0.2s, box-shadow 0.2s;
-            height: 100%;
+            height: 100%; border: 1px solid #ececec; border-radius: 12px; overflow: hidden;
+            cursor: pointer; /* whole card is clickable via stretched-link */
+        }
+        .product-card:hover { transform: translateY(-4px); box-shadow: 0 10px 24px rgba(0,0,0,.1); }
+
+        .product-img {
+            height: 180px; display: flex; align-items: center;
+            justify-content: center; font-size: 3rem;
+        }
+        /* Category-specific gradients */
+        .img-electronics  { background: linear-gradient(135deg,#667eea,#764ba2); }
+        .img-home         { background: linear-gradient(135deg,#f093fb,#f5576c); }
+        .img-books        { background: linear-gradient(135deg,#4facfe,#00f2fe); }
+        .img-kitchen      { background: linear-gradient(135deg,#43e97b,#38f9d7); }
+        .img-sports       { background: linear-gradient(135deg,#fa709a,#fee140); }
+        .img-care         { background: linear-gradient(135deg,#a18cd1,#fbc2eb); }
+        .img-default      { background: linear-gradient(135deg,#96a0b5,#7b8a9d); }
+
+        .price-tag   { font-size: 1.2rem; font-weight: 700; color: #0f3460; }
+        .price-orig  { text-decoration: line-through; color: #aaa; font-size: .85rem; }
+        .price-sale  { color: #e94560; font-weight: 700; font-size: 1.2rem; }
+
+        .flash-badge {
+            background: #e94560; color: white;
+            font-size: .65rem; font-weight: 700;
+            padding: .15rem .45rem; border-radius: 4px; text-transform: uppercase;
+        }
+        .category-pill {
+            font-size: .7rem; padding: .2rem .5rem; border-radius: 20px;
+            background: #f0f4ff; color: #667eea; font-weight: 600;
         }
 
-        .product-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
+        /* ── Category filter pills ── */
+        .filter-pill {
+            font-size: .8rem; border-radius: 20px;
+            padding: .3rem .9rem; transition: all .2s;
         }
 
-        .product-image-placeholder {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            height: 200px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            font-size: 3rem;
-            border-radius: 8px 8px 0 0;
-        }
-
-        .search-box {
-            max-width: 500px;
-        }
-
-        .price-tag {
-            font-size: 1.5rem;
-            font-weight: bold;
-            color: #28a745;
-        }
-
-        .stock-badge {
-            font-size: 0.875rem;
-        }
-
-        .pagination-info {
-            color: #6c757d;
-            font-size: 0.9rem;
-        }
+        .pagination-info { color: #6c757d; font-size: .9rem; }
+        .search-box { max-width: 480px; }
     </style>
 </head>
 
 <body>
-    <!-- Global Navbar -->
     <div th:replace="~{fragments/navbar :: navbar}"></div>
 
-    <!-- Main Content -->
     <div class="container mt-4">
-        <!-- Success/Error Messages -->
+
+        <!-- ── Alerts ── -->
         <div th:if="${successMessage}" class="alert alert-success alert-dismissible fade show" role="alert">
             <span th:text="${successMessage}"></span>
             <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
         </div>
-
         <div th:if="${errorMessage}" class="alert alert-danger alert-dismissible fade show" role="alert">
             <span th:text="${errorMessage}"></span>
             <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
         </div>
 
-        <!-- Header & Search -->
-        <div class="row mb-4">
-            <div class="col-md-12">
-                <h1 class="mb-3">Product Catalog</h1>
-
-                <!-- Search Form -->
-                <form th:action="@{/products}" method="get" class="mb-3">
-                    <div class="input-group search-box">
-                        <input type="text" name="keyword" class="form-control" placeholder="Search products..."
-                            th:value="${keyword}">
-                        <button class="btn btn-primary" type="submit">
-                            🔍 Search
-                        </button>
-                        <a th:href="@{/products}" class="btn btn-outline-secondary">Clear</a>
-                    </div>
-                </form>
-            </div>
-        </div>
-        <!-- Results Info -->
-        <div class="row mb-3">
-            <div class="col-md-6">
-                <h4 class="mb-0">
-                    <span th:if="${keyword != null and !keyword.isEmpty()}">
-                        Search Results for "<span th:text="${keyword}"></span>"
-                    </span>
-                    <span th:if="${keyword == null or keyword.isEmpty()}">
+        <!-- ── Header ── -->
+        <div class="row mb-3 align-items-center">
+            <div class="col-md-8">
+                <h1 class="h3 mb-0 fw-bold">
+                    <span th:if="${category != null and !#strings.isEmpty(category)}"
+                          th:text="${category}">Category</span>
+                    <span th:if="${keyword != null and !#strings.isEmpty(keyword)}"
+                          th:text="'Results for &quot;' + ${keyword} + '&quot;'">Search</span>
+                    <span th:if="${(category == null or #strings.isEmpty(category)) and (keyword == null or #strings.isEmpty(keyword))}">
                         All Products
                     </span>
-                </h4>
-                <p class="pagination-info mb-0">
-                    Showing <span th:text="${products.size()}"></span> of
-                    <span th:text="${totalItems}"></span> products
+                </h1>
+                <p class="text-muted mb-0 pagination-info">
+                    <span th:text="${totalItems}">0</span> products found
                 </p>
             </div>
-            <div class="col-md-6 text-end">
-                <!-- Sorting Controls -->
-                <div class="btn-group" role="group">
-                    <button type="button" class="btn btn-sm btn-outline-secondary dropdown-toggle"
-                        data-bs-toggle="dropdown">
-                        Sort by: <span th:text="${sort}"></span>
+            <div class="col-md-4 text-md-end mt-2 mt-md-0">
+                <!-- Sort dropdown -->
+                <div class="dropdown d-inline-block">
+                    <button class="btn btn-sm btn-outline-secondary dropdown-toggle" data-bs-toggle="dropdown">
+                        Sort: <span th:text="${sort}">name</span>
                     </button>
-                    <ul class="dropdown-menu">
-                        <li>
-                            <a class="dropdown-item"
-                                th:href="@{/products(page=${currentPage}, size=10, sort='name', direction='asc', keyword=${keyword})}">
-                                Name (A-Z)
-                            </a>
-                        </li>
-                        <li>
-                            <a class="dropdown-item"
-                                th:href="@{/products(page=${currentPage}, size=10, sort='name', direction='desc', keyword=${keyword})}">
-                                Name (Z-A)
-                            </a>
-                        </li>
-                        <li>
-                            <a class="dropdown-item"
-                                th:href="@{/products(page=${currentPage}, size=10, sort='price', direction='asc', keyword=${keyword})}">
-                                Price (Low to High)
-                            </a>
-                        </li>
-                        <li>
-                            <a class="dropdown-item"
-                                th:href="@{/products(page=${currentPage}, size=10, sort='price', direction='desc', keyword=${keyword})}">
-                                Price (High to Low)
-                            </a>
-                        </li>
+                    <ul class="dropdown-menu dropdown-menu-end">
+                        <li><a class="dropdown-item"
+                               th:href="@{/products(sort='name',direction='asc',keyword=${keyword},category=${category})}">Name A→Z</a></li>
+                        <li><a class="dropdown-item"
+                               th:href="@{/products(sort='name',direction='desc',keyword=${keyword},category=${category})}">Name Z→A</a></li>
+                        <li><a class="dropdown-item"
+                               th:href="@{/products(sort='price',direction='asc',keyword=${keyword},category=${category})}">Price ↑</a></li>
+                        <li><a class="dropdown-item"
+                               th:href="@{/products(sort='price',direction='desc',keyword=${keyword},category=${category})}">Price ↓</a></li>
+                        <li><a class="dropdown-item"
+                               th:href="@{/products(sort='createdAt',direction='desc',keyword=${keyword},category=${category})}">Newest First</a></li>
                     </ul>
                 </div>
             </div>
         </div>
 
-        <!-- Product Grid -->
-        <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4 mb-4">
+        <!-- ── Search bar ── -->
+        <form th:action="@{/products}" method="get" class="mb-3">
+            <div class="input-group search-box">
+                <input type="text" name="keyword" class="form-control"
+                       placeholder="Search products..." th:value="${keyword}">
+                <button class="btn btn-primary" type="submit">🔍 Search</button>
+                <a th:href="@{/products}" class="btn btn-outline-secondary">Clear</a>
+            </div>
+        </form>
+
+        <!-- ── Category filter pills ── -->
+        <div class="mb-3 d-flex flex-wrap gap-2" th:if="${categories != null and !categories.isEmpty()}">
+            <a th:href="@{/products(keyword=${keyword})}"
+               class="btn filter-pill"
+               th:classappend="${category == null or #strings.isEmpty(category)} ? 'btn-dark' : 'btn-outline-secondary'">
+                All
+            </a>
+            <a th:each="cat : ${categories}"
+               th:href="@{/products(category=${cat.name},keyword=${keyword})}"
+               class="btn filter-pill"
+               th:classappend="${category != null and category == cat.name} ? 'btn-dark' : 'btn-outline-secondary'"
+               th:text="${cat.icon + ' ' + cat.name}">Category</a>
+        </div>
+
+        <!-- ── Product Grid ── -->
+        <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-xl-4 g-4 mb-4">
             <div class="col" th:each="product : ${products}">
                 <div class="card product-card h-100">
-                    <div class="card-body">
-                        <h5 class="card-title" th:text="${product.name}">Product Name</h5>
-                        <p class="card-text text-muted" th:text="${product.description}">Description</p>
-                        <hr>
-                        <div class="d-flex justify-content-between align-items-center mb-2">
-                            <span class="price-tag">
-                                $<span th:text="${#numbers.formatDecimal(product.price, 1, 2)}">0.00</span>
-                            </span>
-                            <span class="badge stock-badge" th:classappend="
-        ${product.stock == null} ? 'bg-danger' :
-        (${product.stock > 10} ? 'bg-success' :
-        (${product.stock > 0} ? 'bg-warning' : 'bg-danger'))">
-                                <span th:if="${product.stock != null and product.stock > 0}">
-                                    <span th:text="${product.stock}"></span> in stock
-                                </span>
-                                <span th:if="${product.stock == null or product.stock == 0}">
-                                    Out of stock
-                                </span>
-                            </span>
+
+                    <!-- Product image with category-colored background -->
+                    <!-- Use th:with to safely read category name once, avoiding null traversal -->
+                    <div class="product-img"
+                         th:with="catName=${product.category != null ? product.category.name : ''}"
+                         th:classappend="${#strings.equalsIgnoreCase(catName,'Electronics')}     ? 'img-electronics' :
+                                        (${#strings.equalsIgnoreCase(catName,'Home &amp; Office')}       ? 'img-home'         :
+                                        (${#strings.equalsIgnoreCase(catName,'Books &amp; Stationery')} ? 'img-books'        :
+                                        (${#strings.equalsIgnoreCase(catName,'Kitchen &amp; Dining')}   ? 'img-kitchen'      :
+                                        (${#strings.equalsIgnoreCase(catName,'Sports &amp; Fitness')}   ? 'img-sports'       :
+                                        (${#strings.equalsIgnoreCase(catName,'Personal Care')}          ? 'img-care'         :
+                                        'img-default')))))">
+                        <span th:text="${product.category != null ? product.category.icon : '📦'}">📦</span>
+                    </div>
+
+                    <div class="card-body d-flex flex-column p-3">
+
+                        <!-- Badges row -->
+                        <div class="d-flex gap-1 mb-2 flex-wrap">
+                            <span th:if="${product.category != null}"
+                                  class="category-pill"
+                                  th:text="${product.category.name}">Category</span>
+                            <span th:if="${product.flashSaleActive}"
+                                  class="flash-badge">⚡ Flash Sale</span>
                         </div>
-                        <a th:href="@{/products/{id}(id=${product.id})}" class="btn btn-outline-primary w-100">
-                            View Details
-                        </a>
+
+                        <!-- Name -->
+                        <h6 class="card-title fw-semibold mb-1" th:text="${product.name}"
+                            style="line-height:1.35; font-size:.92rem;">Product Name</h6>
+
+                        <!-- Description -->
+                        <p class="card-text text-muted mb-2" style="font-size:.8rem; line-height:1.4;"
+                           th:text="${#strings.abbreviate(product.description, 80)}">Description</p>
+
+                        <div class="mt-auto">
+                            <!-- Price -->
+                            <div class="d-flex align-items-center gap-2 mb-2">
+                                <!-- Flash sale: show discounted + original -->
+                                <span th:if="${product.flashSaleActive}">
+                                    <span class="price-sale"
+                                          th:text="'$' + ${#numbers.formatDecimal(product.discountedPrice, 1, 2)}">$0.00</span>
+                                    <span class="price-orig"
+                                          th:text="'$' + ${#numbers.formatDecimal(product.price, 1, 2)}">$0.00</span>
+                                </span>
+                                <!-- Regular price -->
+                                <span th:if="${!product.flashSaleActive}"
+                                      class="price-tag"
+                                      th:text="'$' + ${#numbers.formatDecimal(product.price, 1, 2)}">$0.00</span>
+
+                                <!-- Stock badge -->
+                                <span class="badge ms-auto"
+                                      th:classappend="${product.stock > 10} ? 'bg-success' :
+                                                     (${product.stock > 0}  ? 'bg-warning text-dark' : 'bg-danger')"
+                                      style="font-size:.7rem;">
+                                    <span th:if="${product.stock > 0}"   th:text="${product.stock} + ' in stock'"></span>
+                                    <span th:if="${product.stock == 0}">Out of stock</span>
+                                </span>
+                            </div>
+
+                            <!-- CTA button — stretched-link makes the ENTIRE card clickable -->
+                            <a th:href="@{/products/{id}(id=${product.id})}"
+                               class="btn btn-dark btn-sm w-100 stretched-link">
+                                View Details →
+                            </a>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
 
-        <!-- Empty State -->
-        <div class="row" th:if="${products.isEmpty()}">
-            <div class="col-12">
-                <div class="alert alert-info text-center" role="alert">
-                    <h4 class="alert-heading">No products found</h4>
-                    <p th:if="${keyword != null and !keyword.isEmpty()}">
-                        No products match your search criteria. Try a different keyword.
-                    </p>
-                    <p th:if="${keyword == null or keyword.isEmpty()}">
-                        The product catalog is currently empty.
-                    </p>
-                </div>
-            </div>
+        <!-- ── Empty state ── -->
+        <div class="text-center py-5" th:if="${products.isEmpty()}">
+            <div class="display-1 text-muted mb-3">🔍</div>
+            <h4 class="text-muted">No products found</h4>
+            <p class="text-muted" th:if="${keyword != null and !#strings.isEmpty(keyword)}"
+               th:text="'No results for &quot;' + ${keyword} + '&quot;. Try a different keyword.'">No results.</p>
+            <p class="text-muted" th:if="${category != null and !#strings.isEmpty(category)}"
+               th:text="'No products in &quot;' + ${category} + '&quot; category.'">No results.</p>
+            <a th:href="@{/products}" class="btn btn-dark mt-2">Clear Filters</a>
         </div>
 
-        <!-- Pagination Controls -->
-        <nav th:if="${totalPages > 1}" class="mt-4">
+        <!-- ── Pagination ── -->
+        <nav th:if="${totalPages > 1}" class="mt-4 mb-5">
             <ul class="pagination justify-content-center">
-                <!-- Previous Button -->
                 <li class="page-item" th:classappend="${currentPage == 0} ? 'disabled'">
                     <a class="page-link"
-                        th:href="@{/products(page=${currentPage - 1}, size=10, sort=${sort}, direction=${direction}, keyword=${keyword})}"
-                        th:if="${currentPage > 0}">
-                        Previous
-                    </a>
-                    <span class="page-link" th:if="${currentPage == 0}">Previous</span>
+                       th:href="@{/products(page=${currentPage-1},size=12,sort=${sort},direction=${direction},keyword=${keyword},category=${category})}"
+                       th:if="${currentPage > 0}">← Prev</a>
+                    <span class="page-link" th:if="${currentPage == 0}">← Prev</span>
                 </li>
-
-                <!-- Page Numbers -->
-                <li class="page-item" th:each="pageNum : ${#numbers.sequence(0, totalPages - 1)}"
-                    th:if="${pageNum >= currentPage - 2 and pageNum <= currentPage + 2}"
-                    th:classappend="${pageNum == currentPage} ? 'active'">
+                <li class="page-item"
+                    th:each="p : ${#numbers.sequence(0, totalPages - 1)}"
+                    th:if="${p >= currentPage - 2 and p <= currentPage + 2}"
+                    th:classappend="${p == currentPage} ? 'active'">
                     <a class="page-link"
-                        th:href="@{/products(page=${pageNum}, size=10, sort=${sort}, direction=${direction}, keyword=${keyword})}"
-                        th:text="${pageNum + 1}">
-                        1
-                    </a>
+                       th:href="@{/products(page=${p},size=12,sort=${sort},direction=${direction},keyword=${keyword},category=${category})}"
+                       th:text="${p + 1}">1</a>
                 </li>
-
-                <!-- Next Button -->
                 <li class="page-item" th:classappend="${currentPage + 1 >= totalPages} ? 'disabled'">
                     <a class="page-link"
-                        th:href="@{/products(page=${currentPage + 1}, size=10, sort=${sort}, direction=${direction}, keyword=${keyword})}"
-                        th:if="${currentPage + 1 < totalPages}">
-                        Next
-                    </a>
-                    <span class="page-link" th:if="${currentPage + 1 >= totalPages}">Next</span>
+                       th:href="@{/products(page=${currentPage+1},size=12,sort=${sort},direction=${direction},keyword=${keyword},category=${category})}"
+                       th:if="${currentPage + 1 < totalPages}">Next →</a>
+                    <span class="page-link" th:if="${currentPage + 1 >= totalPages}">Next →</span>
                 </li>
             </ul>
             <p class="text-center pagination-info">
-                Page <span th:text="${currentPage + 1}"></span> of <span th:text="${totalPages}"></span>
+                Page <span th:text="${currentPage + 1}">1</span> of <span th:text="${totalPages}">1</span>
             </p>
         </nav>
-    </div>
 
+    </div><!-- /container -->
+
+    <div th:replace="~{fragments/footer :: footer}"></div>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
-
 </html>

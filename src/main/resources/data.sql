@@ -92,3 +92,92 @@ INSERT INTO products (name, description, price, stock) VALUES
 -- Special Chaos Testing Product
 INSERT INTO products (name, description, price, stock) VALUES
 ('heavy-query', 'Special product that triggers DB latency simulation for testing', 999.99, 1);
+
+-- ========================================================
+-- CATEGORIES SEED DATA
+-- ========================================================
+INSERT INTO categories (name, description, icon) VALUES
+('Electronics',       'Gadgets, devices & tech accessories',         '💻'),
+('Home & Office',     'Furniture, decor & office supplies',          '🏠'),
+('Books & Stationery','Notebooks, pens & study materials',           '📚'),
+('Kitchen & Dining',  'Cookware, appliances & kitchen tools',        '🍳'),
+('Sports & Fitness',  'Exercise equipment & activewear',             '🏋️'),
+('Personal Care',     'Health, beauty & wellness products',          '🧴');
+
+-- ========================================================
+-- CATEGORY ASSIGNMENTS (UPDATE existing products)
+-- ========================================================
+UPDATE products SET category_id = (SELECT id FROM categories WHERE name = 'Electronics')
+WHERE name IN (
+    'Wireless Bluetooth Headphones','Gaming Mouse RGB','Mechanical Keyboard',
+    '4K Webcam','USB-C Hub 7-in-1','Portable SSD 1TB','Wireless Charger Pad',
+    'Smart Watch Fitness Tracker','Laptop Stand Aluminum','Desktop Monitor 27"'
+);
+
+UPDATE products SET category_id = (SELECT id FROM categories WHERE name = 'Home & Office')
+WHERE name IN (
+    'Ergonomic Office Chair','Standing Desk Electric','LED Desk Lamp',
+    'Wireless Printer Scanner','Paper Shredder','Desk Organizer Set',
+    'Whiteboard 48x36','Cable Management Box','Bookshelf 5-Tier','Floor Mat Anti-Fatigue'
+);
+
+UPDATE products SET category_id = (SELECT id FROM categories WHERE name = 'Books & Stationery')
+WHERE name IN (
+    'Notebook Hardcover A5','Fountain Pen Set','Sticky Notes Assorted',
+    'Planner 2026 Weekly','Highlighter Markers','Binder Clips Assorted',
+    'Index Cards 500ct','Stapler Heavy Duty','Pencil Case Canvas','Desk Calendar 2026'
+);
+
+UPDATE products SET category_id = (SELECT id FROM categories WHERE name = 'Kitchen & Dining')
+WHERE name IN (
+    'Stainless Steel Water Bottle','Coffee Maker Programmable','Blender High-Speed',
+    'Air Fryer 6-Quart','Non-Stick Cookware Set','Kitchen Knife Set',
+    'Food Storage Containers','Electric Kettle','Cutting Board Set','Spice Rack Organizer'
+);
+
+UPDATE products SET category_id = (SELECT id FROM categories WHERE name = 'Sports & Fitness')
+WHERE name IN (
+    'Yoga Mat Extra Thick','Resistance Bands Set','Dumbbell Set Adjustable',
+    'Jump Rope Speed','Gym Bag Duffel','Foam Roller',
+    'Water Resistant Running Belt','Workout Gloves','Protein Shaker Bottle','Fitness Tracker Band'
+);
+
+UPDATE products SET category_id = (SELECT id FROM categories WHERE name = 'Personal Care')
+WHERE name IN (
+    'Electric Toothbrush','Hair Dryer Ionic','Massage Gun Deep Tissue',
+    'Humidifier Ultrasonic','Bathroom Scale Digital'
+);
+
+-- ========================================================
+-- FLASH SALE SETUP
+-- All sales start immediately and run for 24 hours from startup.
+-- Using DATEADD for H2 compatibility.
+-- ========================================================
+UPDATE products SET
+    flash_sale      = TRUE,
+    discounted_price = 59.99,
+    flash_start     = CURRENT_TIMESTAMP,
+    flash_end       = DATEADD('HOUR', 24, CURRENT_TIMESTAMP)
+WHERE name = 'Wireless Bluetooth Headphones';
+
+UPDATE products SET
+    flash_sale      = TRUE,
+    discounted_price = 32.99,
+    flash_start     = CURRENT_TIMESTAMP,
+    flash_end       = DATEADD('HOUR', 24, CURRENT_TIMESTAMP)
+WHERE name = 'Gaming Mouse RGB';
+
+UPDATE products SET
+    flash_sale       = TRUE,
+    discounted_price = 74.99,
+    flash_start      = CURRENT_TIMESTAMP,
+    flash_end        = DATEADD('HOUR', 24, CURRENT_TIMESTAMP)
+WHERE name = 'Air Fryer 6-Quart';
+
+UPDATE products SET
+    flash_sale       = TRUE,
+    discounted_price = 139.99,
+    flash_start      = CURRENT_TIMESTAMP,
+    flash_end        = DATEADD('HOUR', 24, CURRENT_TIMESTAMP)
+WHERE name = 'Smart Watch Fitness Tracker';
+

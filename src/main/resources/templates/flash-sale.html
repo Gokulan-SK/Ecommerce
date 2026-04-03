@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>⚡ Flash Deals - E-Commerce</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body { display: flex; flex-direction: column; min-height: 100vh; background: #f5f5f5; }
+        main { flex: 1; }
+
+        .flash-hero {
+            background: linear-gradient(135deg, #1a1a2e 0%, #e94560 100%);
+            color: white; padding: 3rem 1rem;
+        }
+
+        .flash-card {
+            border-radius: 12px; overflow: hidden; border: none; height: 100%;
+            transition: transform .2s, box-shadow .2s;
+        }
+        .flash-card:hover { transform: translateY(-4px); box-shadow: 0 12px 28px rgba(0,0,0,.15); }
+
+        .flash-img {
+            height: 200px; display: flex; align-items: center;
+            justify-content: center; font-size: 4rem;
+            background: linear-gradient(135deg, #e94560, #c73652);
+        }
+
+        .flash-badge     { background: #e94560; color: white; font-size: .7rem; font-weight: 700; padding: .2rem .5rem; border-radius: 4px; }
+        .price-original  { text-decoration: line-through; color: #aaa; }
+        .price-sale      { color: #e94560; font-weight: 800; font-size: 1.4rem; }
+        .discount-pct    { background: #fff3cd; color: #856404; font-size: .75rem; font-weight: 700; padding: .15rem .45rem; border-radius: 4px; }
+        .timer-label     { font-size: .75rem; color: #6c757d; }
+    </style>
+</head>
+
+<body>
+    <div th:replace="~{fragments/navbar :: navbar}"></div>
+
+    <main>
+        <!-- Hero -->
+        <section class="flash-hero text-center">
+            <h1 class="fw-bold">⚡ Flash Deals</h1>
+            <p class="mb-0" style="color:rgba(255,255,255,.8);">
+                Limited-time offers — grab them before they expire!
+            </p>
+        </section>
+
+        <div class="container py-5">
+
+            <!-- Active flash sales -->
+            <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-xl-4 g-4"
+                 th:if="${flashProducts != null and !flashProducts.isEmpty()}">
+
+                <div class="col" th:each="p : ${flashProducts}">
+                    <div class="card flash-card">
+                        <div class="flash-img">
+                            <span th:text="${p.category != null ? p.category.icon : '🛍️'}">🛍️</span>
+                        </div>
+                        <div class="card-body d-flex flex-column p-3">
+
+                            <!-- Badges -->
+                            <div class="d-flex gap-2 mb-2 flex-wrap align-items-center">
+                                <span class="flash-badge">⚡ Flash Sale</span>
+                                <!-- Discount % -->
+                                <span class="discount-pct"
+                                      th:text="'-' + ${#numbers.formatDecimal((p.price - p.discountedPrice) / p.price * 100, 1, 0)} + '%'">-0%</span>
+                            </div>
+
+                            <h5 class="card-title fw-semibold mb-1" th:text="${p.name}"
+                                style="font-size:.95rem; line-height:1.3;">Product</h5>
+
+                            <p class="text-muted mb-3" style="font-size:.8rem;"
+                               th:text="${#strings.abbreviate(p.description, 80)}">Description</p>
+
+                            <div class="mt-auto">
+                                <!-- Prices -->
+                                <div class="mb-1">
+                                    <span class="price-sale"
+                                          th:text="'$' + ${#numbers.formatDecimal(p.discountedPrice, 1, 2)}">$0.00</span>
+                                    <span class="price-original ms-2"
+                                          th:text="'$' + ${#numbers.formatDecimal(p.price, 1, 2)}">$0.00</span>
+                                </div>
+
+                                <!-- Timer -->
+                                <p class="timer-label mb-2">
+                                    ⏱️ <span th:text="${p.flashSaleHoursLeft} + 'h remaining'">24h remaining</span>
+                                </p>
+
+                                <!-- Stock badge -->
+                                <div class="mb-2">
+                                    <span class="badge"
+                                          th:classappend="${p.stock > 10} ? 'bg-success' :
+                                                         (${p.stock > 0}   ? 'bg-warning text-dark' : 'bg-danger')"
+                                          th:text="${p.stock > 0} ? (${p.stock} + ' left') : 'Out of stock'">In stock</span>
+                                </div>
+
+                                <a th:href="@{/products/{id}(id=${p.id})}"
+                                   class="btn btn-danger btn-sm w-100 fw-semibold">Grab Deal →</a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Empty state -->
+            <div class="text-center py-5" th:if="${flashProducts == null or flashProducts.isEmpty()}">
+                <div class="display-1 mb-3">⚡</div>
+                <h4 class="text-muted">No active flash deals right now</h4>
+                <p class="text-muted">Check back soon — new deals drop every day!</p>
+                <a th:href="@{/products}" class="btn btn-dark mt-2">Browse All Products →</a>
+            </div>
+
+        </div>
+    </main>
+
+    <div th:replace="~{fragments/footer :: footer}"></div>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

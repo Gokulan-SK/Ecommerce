@@ -14,8 +14,12 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
 /**
- * Controller for Product catalog operations
- * Handles MVC requests for product listing and details
+ * Controller for Product catalog operations.
+ * Handles MVC requests for product listing and details.
+ *
+ * Extensions (non-destructive):
+ *   - listProducts() now accepts ?category= param
+ *   - New endpoint GET /products/flash-sale
  */
 @Controller
 @RequestMapping("/products")
@@ -28,59 +32,74 @@ public class ProductController {
     }
 
     /**
-     * Display paginated product list with optional search and sorting
+     * Display paginated product list with optional search, category filter, and sorting.
      * GET /products
-     * 
+     * GET /products?keyword=phone
+     * GET /products?category=Electronics
+     *
      * @param page      current page number (default 0)
-     * @param size      page size (default 10)
+     * @param size      page size (default 12)
      * @param sort      sort field (default name)
      * @param direction sort direction (default asc)
      * @param keyword   optional search keyword
+     * @param category  optional category filter (matches category name)
      * @param model     Spring MVC model
      * @return products view name
      */
     @GetMapping
     public String listProducts(
             @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(defaultValue = "12") int size,
             @RequestParam(defaultValue = "name") String sort,
             @RequestParam(defaultValue = "asc") String direction,
             @RequestParam(required = false) String keyword,
+            @RequestParam(required = false) String category,
             Model model) {
 
         // Build sort object
         Sort.Direction sortDirection = direction.equalsIgnoreCase("desc")
                 ? Sort.Direction.DESC
                 : Sort.Direction.ASC;
-        Sort sortObj = Sort.by(sortDirection, sort);
+        Pageable pageable = PageRequest.of(page, size, Sort.by(sortDirection, sort));
 
-        // Create pageable
-        Pageable pageable = PageRequest.of(page, size, sortObj);
-
-        // Get products (search or all)
+        // Choose the right query: search > category > all
         Page<Product> productPage;
         if (keyword != null && !keyword.trim().isEmpty()) {
             productPage = productService.searchProducts(keyword, pageable);
+        } else if (category != null && !category.trim().isEmpty()) {
+            productPage = productService.getProductsByCategory(category, pageable);
         } else {
             productPage = productService.getAllProducts(pageable);
         }
 
-        // Add attributes to model
-        model.addAttribute("products", productPage.getContent());
+        model.addAttribute("products",    productPage.getContent());
         model.addAttribute("currentPage", productPage.getNumber());
-        model.addAttribute("totalPages", productPage.getTotalPages());
-        model.addAttribute("totalItems", productPage.getTotalElements());
-        model.addAttribute("sort", sort);
-        model.addAttribute("direction", direction);
-        model.addAttribute("keyword", keyword);
+        model.addAttribute("totalPages",  productPage.getTotalPages());
+        model.addAttribute("totalItems",  productPage.getTotalElements());
+        model.addAttribute("sort",        sort);
+        model.addAttribute("direction",   direction);
+        model.addAttribute("keyword",     keyword);
+        model.addAttribute("category",    category);
+        model.addAttribute("categories",  productService.getAllCategories());
 
         return "products";
     }
 
     /**
-     * Display product detail page
+     * Active flash sale product listing.
+     * GET /products/flash-sale
+     */
+    @GetMapping("/flash-sale")
+    public String flashSale(Model model) {
+        model.addAttribute("flashProducts", productService.getActiveFlashSaleProducts());
+        model.addAttribute("categories",    productService.getAllCategories());
+        return "flash-sale";
+    }
+
+    /**
+     * Display product detail page.
      * GET /products/{id}
-     * 
+     *
      * @param id    product ID
      * @param model Spring MVC model
      * @return product-detail view name

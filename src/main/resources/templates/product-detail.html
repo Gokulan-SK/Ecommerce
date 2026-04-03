@@ -102,7 +102,22 @@
                 <div class="row mb-4">
                     <div class="col-md-6">
                         <h5 class="mb-2">Price</h5>
-                        <div class="price-display">
+
+                        <!-- Flash sale: show discounted price + struck-through original -->
+                        <div th:if="${product.flashSaleActive}">
+                            <span class="text-danger fw-bold" style="font-size:2.2rem;"
+                                  th:text="'$' + ${#numbers.formatDecimal(product.discountedPrice, 1, 2)}">$0.00</span>
+                            <span class="text-muted text-decoration-line-through ms-2 fs-5"
+                                  th:text="'$' + ${#numbers.formatDecimal(product.price, 1, 2)}">$0.00</span>
+                            <div class="mt-1">
+                                <span class="badge bg-danger">⚡ Flash Sale</span>
+                                <span class="text-muted ms-2" style="font-size:.85rem;"
+                                      th:text="${product.flashSaleHoursLeft} + 'h remaining'">24h remaining</span>
+                            </div>
+                        </div>
+
+                        <!-- Regular price -->
+                        <div th:if="${!product.flashSaleActive}" class="price-display">
                             $<span th:text="${#numbers.formatDecimal(product.price, 1, 2)}">0.00</span>
                         </div>
                     </div>
@@ -159,7 +174,17 @@
                         <tr>
                             <th>Price</th>
                             <td>
-                                $<span th:text="${#numbers.formatDecimal(product.price, 1, 2)}">0.00</span>
+                                <!-- Show sale price when active, original price otherwise -->
+                                <span th:if="${product.flashSaleActive}">
+                                    <span class="text-danger fw-bold"
+                                          th:text="'$' + ${#numbers.formatDecimal(product.discountedPrice, 1, 2)}">$0.00</span>
+                                    <span class="text-muted text-decoration-line-through ms-1"
+                                          th:text="'$' + ${#numbers.formatDecimal(product.price, 1, 2)}">$0.00</span>
+                                    <span class="badge bg-danger ms-1">SALE</span>
+                                </span>
+                                <span th:if="${!product.flashSaleActive}">
+                                    $<span th:text="${#numbers.formatDecimal(product.price, 1, 2)}">0.00</span>
+                                </span>
                             </td>
                         </tr>
                         <tr>

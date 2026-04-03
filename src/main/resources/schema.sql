@@ -3,12 +3,14 @@
 -- H2 In-Memory Database
 -- ========================================================
 
--- Drop tables if they exist (for clean re-initialization)
+-- Drop tables in reverse FK dependency order
+DROP TABLE IF EXISTS order_items CASCADE;
 DROP TABLE IF EXISTS payments CASCADE;
 DROP TABLE IF EXISTS orders CASCADE;
 DROP TABLE IF EXISTS cart_items CASCADE;
 DROP TABLE IF EXISTS carts CASCADE;
 DROP TABLE IF EXISTS products CASCADE;
+DROP TABLE IF EXISTS categories CASCADE;
 DROP TABLE IF EXISTS users CASCADE;
 
 -- ========================================================
@@ -27,7 +29,22 @@ CREATE INDEX idx_users_username ON users(username);
 CREATE INDEX idx_users_role ON users(role);
 
 -- ========================================================
+-- CATEGORIES TABLE
+-- New: groups products into browsable sections
+-- ========================================================
+CREATE TABLE categories (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(100) NOT NULL UNIQUE,
+    description VARCHAR(255),
+    icon VARCHAR(10)
+);
+
+CREATE INDEX idx_categories_name ON categories(name);
+
+-- ========================================================
 -- PRODUCTS TABLE
+-- New nullable columns: category_id, flash_sale, discounted_price,
+-- flash_start, flash_end — all backward compatible with existing data.
 -- ========================================================
 CREATE TABLE products (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
@@ -37,12 +54,26 @@ CREATE TABLE products (
     stock INT NOT NULL DEFAULT 0,
     version BIGINT NOT NULL DEFAULT 0,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
+    -- Category FK (nullable — existing products work without a category)
+    category_id BIGINT,
+
+    -- Flash sale fields (all nullable / defaulted)
+    flash_sale BOOLEAN NOT NULL DEFAULT FALSE,
+    discounted_price DECIMAL(10, 2),
+    flash_start TIMESTAMP,
+    flash_end TIMESTAMP,
+
     CONSTRAINT chk_price CHECK (price >= 0),
-    CONSTRAINT chk_stock CHECK (stock >= 0)
+    CONSTRAINT chk_stock CHECK (stock >= 0),
+    CONSTRAINT fk_products_category
+        FOREIGN KEY (category_id) REFERENCES categories(id) ON DELETE SET NULL
 );
 
 CREATE INDEX idx_products_name ON products(name);
 CREATE INDEX idx_products_price ON products(price);
+CREATE INDEX idx_products_category ON products(category_id);
+CREATE INDEX idx_products_flash_sale ON products(flash_sale);
 
 -- ========================================================
 -- CARTS TABLE
@@ -55,16 +86,12 @@ CREATE TABLE carts (
     updated_at TIMESTAMP,
     CONSTRAINT fk_carts_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
     CONSTRAINT chk_cart_status CHECK (status IN ('ACTIVE', 'CHECKED_OUT'))
-    -- NOTE: One ACTIVE cart per user enforced by idx_uq_cart_user_active below (filtered index)
+    -- NOTE: One ACTIVE cart per user enforced by application layer (OrderService pessimistic lock)
 );
 
 CREATE INDEX idx_carts_user_id ON carts(user_id);
 CREATE INDEX idx_carts_status ON carts(status);
 CREATE INDEX idx_carts_user_status ON carts(user_id, status);
-
--- NOTE: The "one ACTIVE cart per user" rule is enforced at the application layer
--- in OrderService.checkout() via pessimistic locking (findActiveCartForUpdate).
--- H2 does not support partial/filtered unique indexes, so no DB-level constraint here.
 
 -- ========================================================
 -- CART_ITEMS TABLE
@@ -141,10 +168,10 @@ CREATE TABLE order_items (
     unit_price DECIMAL(10,2) NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 
-    CONSTRAINT fk_order_items_order 
+    CONSTRAINT fk_order_items_order
         FOREIGN KEY (order_id) REFERENCES orders(id) ON DELETE CASCADE,
 
-    CONSTRAINT fk_order_items_product 
+    CONSTRAINT fk_order_items_product
         FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE,
 
     CONSTRAINT chk_order_item_quantity CHECK (quantity > 0),
